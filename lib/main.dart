@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:tag_client/screens/loginpage.dart';
 import 'package:tag_client/screens/scanpage.dart';
 
 void main() => runApp(const MyApp());
@@ -17,7 +18,7 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
 
       ),
-      home: const ScanPage(),
+      home: const LoginPage(),
     );
   }
 }

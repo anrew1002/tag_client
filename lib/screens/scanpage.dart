@@ -1,23 +1,28 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_nfc_kit/flutter_nfc_kit.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'dart:developer' as developer;
 
 import 'package:tag_client/models/tag.dart';
 import 'package:tag_client/tag_provider/api.dart';
 
 class ScanPage extends StatefulWidget {
-  const ScanPage({super.key});
+  final FlutterSecureStorage storage;
+  ScanPage({super.key, required this.storage });
   @override
   State<ScanPage> createState() => _ScanPageState();
 }
 
-enum StateIndex { ready, pending, internetConnectionFail, success }
+enum StateIndex { ready, pending, internetTimeout ,internetConnectionFail, success }
 
 class _ScanPageState extends State<ScanPage> {
   bool isChecked = false;
   NFCTag? tagNFC;
   String alias = "";
   StateIndex state = StateIndex.ready;
+
 
   @override
   void initState() {
@@ -27,16 +32,33 @@ class _ScanPageState extends State<ScanPage> {
   }
 
   Future<void> checkTag() async {
+    setState(() {
+      state = StateIndex.pending;
+    });
+    developer.log("checking tag", name: 'my.app.TagApi');
     tagNFC = await FlutterNfcKit.poll();
     if (tagNFC != null) {
       var tag = Tag.fromNfcTag(tagNFC!);
       developer.log("Tag found: ${tagNFC?.id}", name: 'my.app.TagApi');
+      var timer = Timer(const Duration(seconds: 1), () {
+        developer.log('Server connection time to long',
+            name: 'my.app.checkTag');
+          setState((){
+          state = StateIndex.internetTimeout;
+          });
+      });
       var tagAPI = await TagApi().postTagID(tag);
+      timer.cancel();
+
       if (tagAPI != null) {
         developer.log("Tag get: ${tagAPI.alias}", name: 'my.app.TagApi');
         setState(() {
           alias = tagAPI.alias!;
-          isChecked = true;
+          state = StateIndex.success;
+        });
+      }else{
+        setState(() {
+          state = StateIndex.internetConnectionFail;
         });
       }
     }
@@ -54,8 +76,10 @@ class _ScanPageState extends State<ScanPage> {
         body = ElevatedButton(onPressed: onPressed, child: const Text('Scan'));
       case StateIndex.pending:
         body = const Text("Ищем метку...");
+      case StateIndex.internetTimeout:
+        body = const Text("Отправляем данные на сервер...");
       case StateIndex.internetConnectionFail:
-        body = Column(
+        body = Column(mainAxisAlignment: MainAxisAlignment.center,
           children: [
             const Text("Ошибка соединения с сервером"),
             const SizedBox(height: 10),
@@ -79,42 +103,27 @@ class _ScanPageState extends State<ScanPage> {
           Text(tagNFC!.id),
           ElevatedButton(onPressed: back, child: const Text('Back'))
         ]);
+
     }
     return Scaffold(
-        body: isChecked
-            ? SafeArea(
+        body: SafeArea(
                 child: Center(
-                    child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                    SizedBox(height: 10),
-                    Card(
-                      color: theme.colorScheme.primary,
-                      child: Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Text(
-                          alias,
-                          style: style,
-                        ),
-                      ),
-                    ),
-                    SizedBox(height: 10),
-                    Text(tagNFC!.id),
-                    ElevatedButton(onPressed: back, child: const Text('Back'))
-                  ])))
-            : Center(
-                child: ElevatedButton(
-                    onPressed: onPressed, child: const Text('Scan'))));
+                    child: body)));
   }
 
   void onPressed() {
     checkTag();
+    setState(() {
+      state = StateIndex.pending;
+    });
   }
 
   void back() {
     setState(() {
-      tagNFC = null;
-      isChecked = false;
+      setState(() {
+        state = StateIndex.ready;
+        alias = "";
+      });
     });
   }
 }
