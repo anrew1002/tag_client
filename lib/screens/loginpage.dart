@@ -1,5 +1,5 @@
 import 'dart:convert';
-
+import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:tag_client/screens/scanpage.dart';
@@ -7,7 +7,7 @@ import 'package:tag_client/screens/scanpage.dart';
 import '../tag_provider/api.dart';
 import '../models/key.dart';
 
-final storage = new FlutterSecureStorage();
+final storage = FlutterSecureStorage();
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -18,6 +18,24 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   final myController = TextEditingController();
+
+  @override
+  void initState()  {
+    // TODO: implement initState
+    super.initState();
+    ifAlreadyAuth();
+  }
+
+  Future<void> ifAlreadyAuth() async {
+  var key = await storage.read(key: "apikey");
+  // key = null;
+  // developer.log("checking key $key", name: 'my.app.LoginPage');
+  if (key!=null){
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (context) => ScanPage(storage: storage)),
+    );
+  }
+  }
 
   @override
   void dispose() {
@@ -58,9 +76,12 @@ class _LoginPageState extends State<LoginPage> {
 }
 
 void onPressed(TextEditingController controller, BuildContext context) async {
-  var key = KeysApi().getApiKey(controller.text);
-  storage.write(key: "apikey", value: jsonEncode(key));
-  Navigator.of(context).push(
-    MaterialPageRoute(builder: (context) => const ScanPage(storage: storage)),
-  );
+  var key = await KeysApi().getApiKey(controller.text);
+  if (key != null) {
+    storage.write(key: "apikey", value: key.key);
+    developer.log(jsonEncode(key), name: 'my.app.LoginPage');
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (context) => ScanPage(storage: storage)),
+    );
+  }
 }

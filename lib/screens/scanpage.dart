@@ -10,7 +10,7 @@ import 'package:tag_client/tag_provider/api.dart';
 
 class ScanPage extends StatefulWidget {
   final FlutterSecureStorage storage;
-  ScanPage({super.key, required this.storage });
+  const ScanPage({super.key, required this.storage });
   @override
   State<ScanPage> createState() => _ScanPageState();
 }
@@ -73,7 +73,7 @@ class _ScanPageState extends State<ScanPage> {
     Widget body;
     switch (state) {
       case StateIndex.ready:
-        body = ElevatedButton(onPressed: onPressed, child: const Text('Scan'));
+        body = ElevatedButton(onPressed: onPressed, child: const Text('Сканировать'));
       case StateIndex.pending:
         body = const Text("Ищем метку...");
       case StateIndex.internetTimeout:
@@ -100,7 +100,7 @@ class _ScanPageState extends State<ScanPage> {
             ),
           ),
           SizedBox(height: 10),
-          Text(tagNFC!.id),
+          // Text(tagNFC!.id),
           ElevatedButton(onPressed: back, child: const Text('Back'))
         ]);
 
