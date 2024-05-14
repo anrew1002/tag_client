@@ -18,7 +18,7 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   final myController = TextEditingController();
-
+  String message = "";
   @override
   void initState()  {
     // TODO: implement initState
@@ -28,7 +28,7 @@ class _LoginPageState extends State<LoginPage> {
 
   Future<void> ifAlreadyAuth() async {
   var key = await storage.read(key: "apikey");
-  // key = null;
+  key = null;
   // developer.log("checking key $key", name: 'my.app.LoginPage');
   if (key!=null){
     Navigator.of(context).push(
@@ -52,7 +52,7 @@ class _LoginPageState extends State<LoginPage> {
       padding: EdgeInsets.all(20),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
-        children: [
+        children: [ Text(message,style:const TextStyle(color: Colors.red)), const SizedBox(height: 20),
           TextField(
             controller: myController,
             decoration: const InputDecoration(
@@ -73,15 +73,24 @@ class _LoginPageState extends State<LoginPage> {
       ),
     )));
   }
-}
+  void onPressed(TextEditingController controller, BuildContext context) async {
+    var response = await KeysApi().getApiKey(controller.text);
+    if (response != null) {
+      if (response.statusCode == 409){
+        setState((){
+          message = "Имя уже занято";
+        });
+      }
+      var key = ApiKey.fromJson(
+          json.decode(const Utf8Decoder().convert(response.bodyBytes)));
 
-void onPressed(TextEditingController controller, BuildContext context) async {
-  var key = await KeysApi().getApiKey(controller.text);
-  if (key != null) {
-    storage.write(key: "apikey", value: key.key);
-    developer.log(jsonEncode(key), name: 'my.app.LoginPage');
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (context) => ScanPage(storage: storage)),
-    );
+      storage.write(key: "apikey", value: key.key);
+      developer.log(jsonEncode(key), name: 'my.app.LoginPage');
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (context) => ScanPage(storage: storage)),
+      );
+    }
   }
 }
+
+

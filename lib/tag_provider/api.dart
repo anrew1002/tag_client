@@ -42,7 +42,7 @@ class TagApi {
   }
 }
 class KeysApi {
-  Future<ApiKey?> getApiKey(String login) async{
+  Future<Response?> getApiKey(String login) async{
     developer.log('starting getApiKey request with $login}',
         name: 'my.app.TagApi');
     var client = http.Client();
@@ -53,10 +53,10 @@ class KeysApi {
       response = await client.get(uri);
       if (response.statusCode == 200) {
         developer.log("Success! ${response.statusCode}", name: 'my.app.TagApi');
-        return ApiKey.fromJson(
-            json.decode(const Utf8Decoder().convert(response.bodyBytes)));
+        return response;
       } else {
         developer.log("Fail! ${response.statusCode}", name: 'my.app.TagApi');
+        return response;
       }
     } on ClientException catch (e) {
       developer.log('Error: $e');
